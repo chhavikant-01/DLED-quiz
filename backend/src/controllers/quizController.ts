@@ -47,10 +47,20 @@ export const getQuizzes = async (
 
     const quizzes = await query;
 
+    const quizzesData = quizzes.map((quiz) => ({
+      _id: quiz._id,
+      title: quiz.title,
+      description: quiz.description,
+      timeLimit: quiz.timeLimit,
+      status: quiz.isPublished ? 'published' : 'draft',
+      createdBy: quiz.createdBy,
+      updatedAt: quiz.updatedAt,
+    }));
+
     res.status(200).json({
       success: true,
       count: quizzes.length,
-      data: quizzes,
+      data: quizzesData,
     });
   } catch (error) {
     next(error);
@@ -64,9 +74,9 @@ export const getQuiz = async (
   next: NextFunction
 ) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
+    const q = await Quiz.findById(req.params.id);
 
-    if (!quiz) {
+    if (!q) {
       return res.status(404).json({
         success: false,
         message: 'Quiz not found',
@@ -76,7 +86,7 @@ export const getQuiz = async (
     // Check if user owns the quiz
     if (
       req.user.role === UserRole.TEACHER && 
-      (quiz as any).createdBy.toString() !== req.user._id.toString()
+      (q as any).createdBy.toString() !== req.user._id.toString()
     ) {
       return res.status(403).json({
         success: false,
@@ -85,14 +95,29 @@ export const getQuiz = async (
     }
 
     // Populate questions
-    const questions = await Question.find({ quizId: quiz._id });
+    const questions = await Question.find({ quizId: q._id });
+    const questionsData = questions.map((question) => ({
+      _id: question._id,
+      quizId: question.quizId,
+      text: question.questionText,
+      options: question.choices,
+      correctAnswer: question.points,
+      isMultipleChoice: question.isMultipleChoice,
+    }));
+    
+    const quiz = {
+      _id: q._id,
+      title: q.title,
+      description: q.description,
+      timeLimit: q.timeLimit,
+      isPublished: q.isPublished,
+      createdBy: q.createdBy,
+      questions: questionsData,
+    };
 
     res.status(200).json({
       success: true,
-      data: {
-        quiz,
-        questions,
-      },
+      data: quiz,
     });
   } catch (error) {
     next(error);
