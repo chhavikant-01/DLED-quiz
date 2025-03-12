@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, logout } from '../controllers/authController';
+import { register, login, logout, refreshToken } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 import { body } from 'express-validator';
 
@@ -34,5 +34,6 @@ const loginValidation = [
 router.post('/register', registerValidation, register as express.RequestHandler);
 router.post('/login', loginValidation, login as express.RequestHandler);
 router.get('/logout', protect as express.RequestHandler, logout as express.RequestHandler);
+router.post('/refresh', refreshToken as express.RequestHandler);
 
 export default router; 

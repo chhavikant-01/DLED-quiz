@@ -23,16 +23,39 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add response interceptor to handle errors
+// Add response interceptor for handling token expiration
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // Handle 401 Unauthorized errors
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If error is 401 (Unauthorized) and has tokenExpired flag and we haven't tried refreshing yet
+    if (
+      error.response?.status === 401 &&
+      (error.response?.data?.tokenExpired || error.response?.data?.message === 'Token expired, please refresh token') &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+      
+      try {
+        const { default: authService } = await import('./authService');
+        
+        // Try to refresh the token
+        await authService.refreshToken();
+        
+        // Update the authorization header with the new token
+        const newToken = localStorage.getItem('token');
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        
+        // Retry the original request with the new token
+        return api(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails, redirect to login
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
+    
     return Promise.reject(error);
   }
 );

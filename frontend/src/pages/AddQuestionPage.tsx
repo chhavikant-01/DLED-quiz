@@ -196,11 +196,11 @@ const AddQuestionPage: React.FC = () => {
                   </div>
                   
                   {formErrors.options && (
-                    <p className="text-sm text-destructive">{formErrors.options}</p>
+                    <p className="text-sm text-red-400">{formErrors.options}</p>
                   )}
                   
                   {formErrors.correctAnswer && (
-                    <p className="text-sm text-destructive">{formErrors.correctAnswer}</p>
+                    <p className="text-sm text-red-400">{formErrors.correctAnswer}</p>
                   )}
 
                   <div className="space-y-3 mt-2">

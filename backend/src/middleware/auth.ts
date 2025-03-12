@@ -8,6 +8,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: any;
+      tokenExpiringSoon?: boolean;
     }
   }
 }
@@ -47,25 +48,46 @@ export const protect = async (
       });
     }
 
-    // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET as string
-    ) as DecodedToken;
+    try {
 
-    // Get user from token
-    const user = await User.findById(decoded.id);
+      const secret = process.env.JWT_SECRET as string;
+      const decoded = jwt.verify(token, secret) as DecodedToken;
 
-    if (!user) {
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+
+      // Check if token is about to expire (less than 15 minutes remaining)
+      const currentTime = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = decoded.exp - currentTime;
+      
+      // If token expires in less than 15 minutes, mark it for refresh
+      if (timeUntilExpiry < 15 * 60) {
+        req.tokenExpiringSoon = true;
+      }
+
+      req.user = user;
+      next();
+    } catch (error: any) {
+      // Check if error is because token expired
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Token expired, please refresh token',
+          tokenExpired: true
+        });
+      }
+
       return res.status(401).json({
         success: false,
-        message: 'User not found',
+        message: 'Not authorized to access this route',
       });
     }
-
-    // Add user to request
-    req.user = user;
-    next();
   } catch (error) {
     return res.status(401).json({
       success: false,

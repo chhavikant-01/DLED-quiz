@@ -12,6 +12,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+  refreshToken?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -41,6 +42,10 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.TEACHER
+    },
+    refreshToken: {
+      type: String,
+      default: null
     }
   },
   {
