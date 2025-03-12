@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   // right now, role === "techear" can only access protected routes
   const { user } = useAuthStore();
-  if (user?.role !== 'teacher') {
+  if (user?.role === 'admin' || user?.role === 'student') {
     return <UnderConstruction role={user?.role || ''} />;
   }
 
